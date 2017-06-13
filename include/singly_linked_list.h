@@ -1,6 +1,7 @@
 #ifndef ALGORITHMS_SINGLY_LINKED_LIST_H
 #define ALGORITHMS_SINGLY_LINKED_LIST_H
 
+#include <algorithm>
 #include <ostream>
 #include <vector>
 
@@ -15,18 +16,26 @@ namespace ds {
     template<typename T>
     class SinglyLinkedList {
     public:
-        SinglyLinkedList() : size(0) {
-            this->head = NULL;
-            this->last = NULL;
+        SinglyLinkedList() : size(0), head(nullptr), last(nullptr) { }
+
+        SinglyLinkedList(const SinglyLinkedList& cp_list) : size(0), head(nullptr), last(nullptr) {
+            Node *curr_node = cp_list.head;
+            while(curr_node) {
+                AddLast(curr_node->data);
+                curr_node = curr_node->next;
+            }
         }
 
-        /*SinglyLinkedList(SinglyLinkedList& cp_list) {
-
-        }*/
+        SinglyLinkedList& operator=(const SinglyLinkedList& rhs_list) {
+            SinglyLinkedList temp(rhs_list);
+            std::swap(temp.head, this->head);
+            this->size = rhs_list.size;
+            return *this;
+        }
 
         ~SinglyLinkedList() {
             Node *temp = head;
-            while (head != NULL) {
+            while (head != nullptr) {
                 temp = head->next;
                 delete head;
                 head = temp;
@@ -114,7 +123,7 @@ namespace ds {
         }
 
         bool Remove(int pos) {
-            if (this->is_empty()) {
+            if (this->IsEmpty()) {
                 return false;
             } else if (pos == 0) {
                 return RemoveFirst();
@@ -134,7 +143,7 @@ namespace ds {
             previous->next = temp->next;
             temp->next = nullptr;
             delete temp;
-            delete previous;
+            this->size--;
             return true;
         }
 
@@ -189,9 +198,9 @@ namespace ds {
         virtual std::ostream& Print(std::ostream &o) const {
             o << "[";
             Node *temp = head;
-            while (temp != NULL) {
+            while (temp != nullptr) {
                 o << temp->data;
-                if (temp->next != NULL) {
+                if (temp->next != nullptr) {
                     o << ", ";
                 }
                 temp = temp->next;
@@ -209,7 +218,9 @@ namespace ds {
 
             Node(const T &pData) : data(pData), next(nullptr) {}
 
-            Node(const Node &cpNode) : data(cpNode.data), next(cpNode.next) {}
+            Node(const Node &cpNode) : data(cpNode.data) {
+                this->next = new Node(cpNode.next);
+            }
 
             ~Node() {}
         };
@@ -221,7 +232,6 @@ namespace ds {
 
     template<typename T>
     std::ostream &operator<<(std::ostream &o, const SinglyLinkedList<T> &l) { return l.Print(o); }
-
 }
 
 #endif //ALGORITHMS_SINGLY_LINKED_LIST_H

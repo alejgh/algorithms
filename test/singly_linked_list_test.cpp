@@ -79,3 +79,30 @@ TEST_CASE("Get test.") {
     REQUIRE(char_list.GetLast() == 'z');
     REQUIRE(char_list.GetSize() == 5);
 }
+
+TEST_CASE("Copy constructor and assignment.") {
+    ds::SinglyLinkedList<int> list1;
+    list1.AddLast(5);
+    list1.AddLast(6);
+    list1.AddLast(7);
+    ds::SinglyLinkedList<int> list2(list1);
+    CheckStrings(list1, "[5, 6, 7]");
+    CheckStrings(list2, "[5, 6, 7]");
+    REQUIRE(list1.GetSize() == list2.GetSize());
+    list1.Remove(1);
+    CheckStrings(list1, "[5, 7]");
+    CheckStrings(list2, "[5, 6, 7]");
+    REQUIRE(list1.GetSize() == 2);
+    REQUIRE(list2.GetSize() == 3);
+
+    list2.Add(2, 1);
+    list2.Add(1, 1);
+    list1 = list2;
+    REQUIRE(list1.GetSize() == list2.GetSize());
+    CheckStrings(list1, "[5, 1, 2, 6, 7]");
+    CheckStrings(list2, "[5, 1, 2, 6, 7]");
+    list2.RemoveFirst();
+    list2.RemoveFirst();
+    CheckStrings(list1, "[5, 1, 2, 6, 7]");
+    CheckStrings(list2, "[2, 6, 7]");
+}
