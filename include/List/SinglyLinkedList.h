@@ -3,7 +3,6 @@
 
 #include <algorithm>
 #include <ostream>
-#include <vector>
 
 namespace ds {
 
@@ -27,6 +26,8 @@ namespace ds {
         }
 
         SinglyLinkedList& operator=(const SinglyLinkedList& rhs_list) {
+            if(this == &rhs_list) return *this;
+
             SinglyLinkedList temp(rhs_list);
             std::swap(temp.head, this->head);
             this->size = rhs_list.size;
@@ -61,7 +62,7 @@ namespace ds {
                 AddFirst(data);
             } else if (pos == this->size) {
                 AddLast(data);
-            } else if (pos > this->size) {
+            } else if (pos > this->size || pos < 0) {
                 throw std::out_of_range("Invalid position.");
             }
 
@@ -92,8 +93,8 @@ namespace ds {
             this->size++;
         }
 
-        T Get(int pos) {
-            if (pos >= this->size) {
+        T& Get(int pos) const {
+            if (pos >= this->size || pos < 0) {
                 throw std::out_of_range("Invalid position.");
             }
 
@@ -104,18 +105,18 @@ namespace ds {
                 curr_index++;
             }
 
-            T data = temp->data;
+            T& data = temp->data;
             return data;
         }
 
-        T GetFirst() {
+        T& GetFirst() const {
             if (this->IsEmpty()){
                 throw std::out_of_range("The list is empty.");
             }
             return head->data;
         }
 
-        T GetLast() {
+        T& GetLast() const {
             if (this->IsEmpty()){
                 throw std::out_of_range("The list is empty.");
             }
@@ -129,6 +130,8 @@ namespace ds {
                 return RemoveFirst();
             } else if (pos == this->size - 1) {
                 return RemoveLast();
+            } else if (pos < 0 || pos > size) {
+                throw std::out_of_range("The list is empty.");
             }
 
             Node *temp = head;
@@ -181,11 +184,11 @@ namespace ds {
             return true;
         }
 
-        bool IsEmpty() {
+        bool IsEmpty() const {
             return size == 0;
         }
 
-        int GetSize() {
+        int GetSize() const {
             return this->size;
         }
 
@@ -195,7 +198,7 @@ namespace ds {
          * @param o Output stream to write the string to.
          * @return Modified output stream.
          */
-        virtual std::ostream& Print(std::ostream &o) const {
+        std::ostream& Print(std::ostream &o) const {
             o << "[";
             Node *temp = head;
             while (temp != nullptr) {
@@ -213,20 +216,11 @@ namespace ds {
         struct Node {
             T data;
             Node *next;
-
-            Node() : data(T()), next(nullptr) {}
-
             Node(const T &pData) : data(pData), next(nullptr) {}
-
-            Node(const Node &cpNode) : data(cpNode.data) {
-                this->next = new Node(cpNode.next);
-            }
-
-            ~Node() {}
         };
 
         Node *head;
-        Node *last; // to get O(1) with operations on last element
+        Node *last; // to get O(1) complexity getting and removing last element
         size_t size;
     };
 
