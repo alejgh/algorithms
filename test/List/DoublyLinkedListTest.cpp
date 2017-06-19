@@ -3,8 +3,6 @@
 #include "Utils.h"
 #include "List/DoublyLinkedList.h"
 
-template<typename T>
-void TryAddOutOfRange(ds::DoublyLinkedList<T> &list, const T &element, int pos);
 
 TEST_CASE("Simple test") {
     ds::DoublyLinkedList<int> intList;
@@ -36,8 +34,8 @@ TEST_CASE("Simple test") {
 TEST_CASE("Bounds checking") {
     ds::DoublyLinkedList<char> charList;
     charList.AddFirst('a');
-    TryAddOutOfRange(charList, 'b', -1);
-    TryAddOutOfRange(charList, 'c', 2);
+    REQUIRE_THROWS(charList.Add('b', -1));
+    REQUIRE_THROWS(charList.Add('c', 2));
     charList.AddLast('d');
     charList.Add('b', 1);
     charList.Add('c', 2);
@@ -49,14 +47,4 @@ TEST_CASE("Bounds checking") {
     anotherCharList.Remove(1);
     utils::CheckString(anotherCharList, "[a, d]");
     utils::CheckString(charList, "[a, b, c, d]");
-}
-
-template<typename T>
-void TryAddOutOfRange(ds::DoublyLinkedList<T> &list, const T &element, int pos) {
-    try {
-        list.Add(element, pos);
-        REQUIRE(false); // the list should have thrown an exception
-    } catch (std::out_of_range) {
-        REQUIRE(true);
-    }
 }
