@@ -1,26 +1,28 @@
 #ifndef ALGORITHMS_BINARYTREE_H
 #define ALGORITHMS_BINARYTREE_H
 
+#include <algorithm>
+#include <functional>
+#include <string>
+#include "List/SinglyLinkedList.h"
+
 namespace ds {
 
-    template<typename T>
-    class SinglyLinkedList; // used to provide the 'ToList' function
-
-    /**
-     *
-     * @tparam T
-     */
-    template<typename T>
+    template<typename TKey, typename TValue>
     class BinarySearchTree {
-    public:
-        typedef void (*CallbackFunction)(Node& node);
+    private:
+        struct BinaryNode {
+            TKey key;
+            TValue value;
+            BinaryNode *right;
+            BinaryNode *left;
 
-        class Node {
-            T mData;
-            Node *mRight;
-            Node *mLeft;
+            BinaryNode(TKey key, TValue val) : key(key), value(val), right(nullptr), left(nullptr) {}
 
-            Node(T& data) : mData(data) {}
+            friend std::ostream& operator<<(std::ostream& os, const BinaryNode& node) {
+                os << "(" << node.key << "," << node.value << ")";
+                return os;
+            }
         };
 
         enum class TraverseTypes {
@@ -29,95 +31,143 @@ namespace ds {
             POST_ORDER
         };
 
+        typedef std::function<void (BinaryNode*)> CallbackAction;
+
+        BinaryNode *mRoot;
+    public:
+
         BinarySearchTree() : mRoot(nullptr) {}
 
         BinarySearchTree(const BinarySearchTree& cpTree) : mRoot(nullptr) {
-            auto initFunc = [this](Node& node) -> void {
-                this->Add(node.mData);
+            auto initFunc = [this](BinaryNode* node) -> void {
+                this->Add(node->key, node->value);
             };
-            this->ApplyFunction(initFunc, TraverseTypes::PRE_ORDER);
+            cpTree.ApplyAction(initFunc, TraverseTypes::PRE_ORDER);
         }
 
         ~BinarySearchTree() {
-            auto deleteFunc = [this](Node& node) -> void {
-                this->Remove()
+            std::function<void (BinaryNode*)> deleteFunc = [this](BinaryNode* node) -> void {
+                this->Remove(node->key);
             };
+            this->ApplyAction(deleteFunc, TraverseTypes::POST_ORDER);
         }
 
-        void Add(T data) {
-            Add(mRoot, data);
+        BinarySearchTree& operator=(const BinarySearchTree& rhsTree) {
+            if(this == &rhsTree) return *this;
+
+            BinarySearchTree temp(rhsTree);
+            std::swap(temp.mRoot, this->mRoot);
+            return *this;
         }
 
-        bool Remove(const Node& nodeToRemove) {
-            return Remove(mRoot, nodeToRemove);
+        void Add(const TKey& key, const TValue& val) {
+            Add(mRoot, key, val);
         }
 
-        const Node& Get(const T& data) const {
-            return Get(mRoot, data);
+        bool Remove(const TKey& keyToRemove) {
+            return Remove(mRoot, keyToRemove);
         }
 
-        void ApplyFunction(CallbackFunction func, TraverseTypes travType = TraverseTypes::IN_ORDER) {
+        BinaryNode* Get(const TKey& key) {
+            BinaryNode *current = mRoot;
+
+            while (current != nullptr && current->key != key) {
+                if (key < current->key)
+                    current = current->left;
+                else
+                    current = current->right;
+            }
+            return current;
+        }
+
+        BinaryNode* GetMin() {
+            return GetMin(mRoot);
+        }
+
+        BinaryNode* GetMax() {
+            return GetMax(mRoot);
+        }
+
+        bool IsEmpty() {
+            return this->mRoot == nullptr;
+        }
+
+        void ApplyAction(CallbackAction action, TraverseTypes travType = TraverseTypes::IN_ORDER) const {
             switch(travType) {
                 case TraverseTypes::IN_ORDER:
-                    ApplyFunctionInOrder(mRoot, func);
+                    ApplyActionInOrder(mRoot, action);
                     break;
                 case TraverseTypes::PRE_ORDER:
-                    ApplyFunctionPreOrder(mRoot, func);
+                    ApplyActionPreOrder(mRoot, action);
+                    break;
+                case TraverseTypes::POST_ORDER:
+                    ApplyActionPostOrder(mRoot, action);
                     break;
             }
         }
 
-        SinglyLinkedList<T> ToList() {
-            SinglyLinkedList<T> ret;
+        SinglyLinkedList<BinaryNode> ToList() {
+            SinglyLinkedList<BinaryNode> ret;
 
-            auto addFunc = [&ret](Node& node)-> void {
-                    ret.AddLast(node.mData);
+            auto addFunc = [&ret](BinaryNode* node)-> void {
+                    ret.AddLast(*node);
             };
 
-            ApplyFunction(addFunc, TraverseTypes::IN_ORDER);
+            ApplyAction(addFunc, TraverseTypes::PRE_ORDER);
 
             return ret;
         }
 
-    private:
-        Node *mRoot;
+        friend std::ostream& operator<<(std::ostream& os, const BinarySearchTree& tree) {
+            std::stringstream ss;
+            ss << "[";
+            auto printAction = [&ss] (BinaryNode *nodePtr) -> void {
+                ss << *nodePtr << ", ";
+            };
+            tree.ApplyAction(printAction, TraverseTypes::PRE_ORDER);
+            std::string ret = ss.str();
+            if(ret.length() > 1) ret.erase(ret.length() - 2, 2); // remove trailing ", "
+            ret += "]";
+            os << ret;
+            return os;
+        }
 
-        void Add(Node& localRoot, T data) {
+    private:
+        void Add(BinaryNode*& localRoot, const TKey& key, const TValue& val) {
             if(localRoot == nullptr)
-                localRoot = new Node(data);
+                localRoot = new BinaryNode(key, val); // this is why we need to pass the pointer by ref
             else {
-                if(data > localRoot.mData)
-                    Add(localRoot.mRight, data);
-                else if(data < localRoot.mData)
-                    Add(localRoot.mLeft, data);
+                if(key > localRoot->key)
+                    Add(localRoot->right, key, val);
+                else if(key < localRoot->key)
+                    Add(localRoot->left, key, val);
                 else
-                    throw std::runtime_error("Duplicate elements are not allowed.");
+                    throw std::runtime_error("Duplicate keys are not allowed.");
             }
         }
 
-        bool Remove(Node& localRoot, const Node& nodeToRemove) {
+        bool Remove(BinaryNode*& localRoot, const TKey& keyToRemove) {
             if(localRoot == nullptr)
                 return false;
             else {
-                if(nodeToRemove < localRoot)
-                    return Remove(localRoot.mLeft, nodeToRemove);
-                else if(nodeToRemove > localRoot)
-                    return Remove(localRoot.mRight, nodeToRemove);
+                if(keyToRemove < localRoot->key)
+                    return Remove(localRoot->left, keyToRemove);
+                else if(keyToRemove > localRoot->key)
+                    return Remove(localRoot->right, keyToRemove);
                 else {
                     // node found: need to know if it has children
-                    if (localRoot.mLeft != nullptr && localRoot.mRight != nullptr) {
-                        Node *maximumAtTheLeft = localRoot.mLeft;
-                        while (maximumAtTheLeft->mRight != nullptr) {
-                            maximumAtTheLeft = maximumAtTheLeft->mRight;
-                        }
-                        localRoot.mData = maximumAtTheLeft->mData;
-                        Remove(localRoot.mLeft, maximumAtTheLeft);
-                    } else if (localRoot.mLeft != nullptr) {
+                    if (localRoot->left != nullptr && localRoot->right != nullptr) {
+                        BinaryNode *maximumAtTheLeft = GetMax(localRoot->left);
+
+                        localRoot->key = maximumAtTheLeft->key;
+                        localRoot->value = maximumAtTheLeft->value;
+                        Remove(localRoot->left, maximumAtTheLeft->key);
+                    } else if (localRoot->left != nullptr) {
                         delete localRoot;
-                        localRoot = localRoot.mLeft;
-                    }else if(localRoot.mRight != nullptr) {
+                        localRoot = localRoot->left;
+                    }else if(localRoot->right != nullptr) {
                         delete localRoot;
-                        localRoot = localRoot.mRight;
+                        localRoot = localRoot->right;
                     } else {
                         // no children
                         delete localRoot;
@@ -128,39 +178,41 @@ namespace ds {
             }
         }
 
-        const Node& Get(const Node& localRoot, const T& data) const {
-            if(localRoot == nullptr || localRoot.mData == data)
+        BinaryNode* GetMax(BinaryNode* localRoot) {
+            if(localRoot == nullptr || localRoot->right == nullptr)
                 return localRoot;
-            else if(data < localRoot.mData)
-                return Get(localRoot.mLeft, data);
-            else
-                return Get(localRoot.mRight, data);
+            else return GetMax(localRoot->right);
         }
 
-        void ApplyFunctionInOrder(Node& localRoot, CallbackFunction func) {
+        BinaryNode* GetMin(BinaryNode* localRoot) {
+            if(localRoot == nullptr || localRoot->left == nullptr)
+                return localRoot;
+            else return GetMin(localRoot->left);
+        }
+
+        void ApplyActionInOrder(BinaryNode* localRoot, CallbackAction action) const {
             if(localRoot == nullptr)
                 return;
-            ApplyFunctionInOrder(localRoot.mLeft, func);
-            func(localRoot);
-            ApplyFunctionInOrder(localRoot.mRight, func);
+            ApplyActionInOrder(localRoot->left, action);
+            action(localRoot);
+            ApplyActionInOrder(localRoot->right, action);
         }
 
-        void ApplyFunctionPreOrder(Node& localRoot, CallbackFunction func) {
+        void ApplyActionPreOrder(BinaryNode* localRoot, CallbackAction action) const {
             if(localRoot == nullptr)
                 return;
-            func(localRoot);
-            ApplyFunctionPreOrder(localRoot.mLeft, func);
-            ApplyFunctionPreOrder(localRoot.mRight, func);
+            action(localRoot);
+            ApplyActionPreOrder(localRoot->left, action);
+            ApplyActionPreOrder(localRoot->right, action);
         }
 
-        void ApplyFunctionPostOrder(Node& localRoot, CallbackFunction func) {
+        void ApplyActionPostOrder(BinaryNode* localRoot, CallbackAction action) const {
             if(localRoot == nullptr)
                 return;
-            ApplyFunctionPostOrder(localRoot.mLeft, func);
-            ApplyFunctionPostOrder(localRoot.mRight, func);
-            func(localRoot);
+            ApplyActionPostOrder(localRoot->left, action);
+            ApplyActionPostOrder(localRoot->right, action);
+            action(localRoot);
         }
-
     };
 }
 
