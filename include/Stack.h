@@ -20,7 +20,8 @@ namespace ds {
          * Pushes an element to the top of the stack
          * @param data Element to be pushed to the stack.
          */
-        void Push(T data) {
+        void Push(T data)
+        {
             mElements.AddFirst(data);
         }
 
@@ -29,8 +30,9 @@ namespace ds {
          * removing it from the stack and returning it.
          * @return Last element added to the stack.
          */
-        T& Pop() {
-            T &temp = this->GetFirst();
+        T Pop()
+        {
+            T temp = this->GetFirst();
             mElements.RemoveFirst();
             return temp;
         }
@@ -40,8 +42,14 @@ namespace ds {
          * but the element is not removed from the stack.
          * @return Last element added to the stack.
          */
-        const T& Peek() const {
+        const T& Peek() const
+        {
             return this->GetFirst();
+        }
+
+        bool IsEmpty() const
+        {
+            return mElements.IsEmpty();
         }
 
         /**
@@ -50,7 +58,8 @@ namespace ds {
          * @param o Original ostream to print the stack.
          * @return Resulting ostream after the stack is printed.
          */
-        std::ostream& Print(std::ostream &o) const {
+        std::ostream& Print(std::ostream &o) const
+        {
             return mElements.Print(o);
         }
 
